@@ -1,5 +1,6 @@
 from collections import defaultdict
-
+import random
+import string
 
 def encrypt_message(message,fname):
     '''
@@ -16,17 +17,24 @@ def encrypt_message(message,fname):
     '''
     assert(isinstance(message, str)), "Message must be a valid string"
     assert(isinstance(fname, str)), "fname must be a valid string"
-    f = open(fname, 'r')
-    mappings = defaultdict(list)
-    for line_number, line in enumerate(f):
-        #print(f"line number {line_number}")
-        #print(line.lower().split())
-        for position,word in enumerate(line):
-            mappings[word].append((line_number,position))
-    res = [0]*len(message)
+    # Build the map for encryption
+    encryption_mappings,_ = build_encryption_decryption_map(fname)
+    # Do the actual encryption
+    message = message.split()
+    # print(message)
+    encrypted_result = [0]*len(message)
     for i,word in enumerate(message):
-        res[i] = mappings[word][0]
-    return res
+        try:
+            assert(word in encryption_mappings), "Word in sentence to encrypt must be a valid word found in Metamorphosis"
+        except AssertionError as e:
+            print(f"Encryption failed: {e}")
+            return None
+        tuples = encryption_mappings[word]
+        # Randomly choose a tuple to map the word and pop it from the list of possible mappings
+        # To increase randomness and reduce duplicate mappings during encryption
+        element = tuples.pop(random.randrange(len(tuples)))
+        encrypted_result[i] = element
+    return encrypted_result
 
 def decrypt_message(inlist,fname):
     '''
@@ -39,6 +47,70 @@ def decrypt_message(inlist,fname):
     :type fname: str
     :returns: string decrypted message
     '''
-    pass
+    assert(isinstance(inlist, list)), "inlist must be a list"
+    for tup in inlist:
+        assert(isinstance(tup,tuple) and len(tup) == 2 and isinstance(tup[0],int) and 
+               isinstance(tup[1],int)), "Element in list is not a valid tuple of two ints"
+        # Also assert against duplicate tuples in the inlist
+    
+    _,decrypted_mappings = build_encryption_decryption_map(fname)
+    decrypted_result = [0]*len(inlist)
+    for i,tup in enumerate(inlist):
+        try:
+            assert(tup in decrypted_mappings), "Tuple must be valid within the Metamorphosis text"
+            assert(len(inlist) == len(set(inlist))), "Cannot have duplicate tuples in the list"
+        except AssertionError as e:
+            print(f"Decryption failed: {e}")
+            return None
+        decrypted_result[i] = decrypted_mappings[tup]
+    return " ".join(decrypted_result)
 
-print(encrypt_message("let us", "metamorphosis.txt"))
+def build_encryption_decryption_map(fname):
+    """
+    Builds a dictionary that maps each word to a list of possible tuples.
+    Each tuple represents the (line number, position in the line) of where that specific
+    key word is found in the fname file that is pased as an argument.
+
+    :param fname: filename for source text
+    :type fname: str
+    :returns: a dictionary that maps the possible encodings for encrypting and decrypting
+    """
+    assert(isinstance(fname, str)), "fname must be a valid file in str format"
+    f = open(fname, 'r')
+    encrypt_mappings = defaultdict(list)
+    decrypt_mappings = {}
+    for line_number, line in enumerate(f):
+        filtered = line.translate(str.maketrans('', '', string.punctuation)).lower().split()
+        for position,word in enumerate(filtered):
+            try:
+                assert((line_number+1,position+1) not in encrypt_mappings[word]), "Tuples cannot be repeated for the same word"
+            except AssertionError as e:
+                print(f"Encryption map building failed: {e}")
+                return None
+            encrypt_mappings[word].append((line_number+1,position+1))
+            decrypt_mappings[(line_number+1,position+1)] = word
+    return encrypt_mappings,decrypt_mappings
+    
+# def build_decyrption_map(fname):
+#     """
+#     Builds a dictionary that maps each word to a possible tuple.
+#     Each tuple represents the (line number, position in the line) of where that specific
+#     word is found. In contrast to the build_encrypt_map() dictionary
+#     that is created, this dictionary is flipped. The key is the tuple
+#     and the value is the word.
+
+#     :param fname: filename for source text
+#     :type fname: str
+#     :returns: a dictionary that maps the possible encodings for encrypting and decrypting
+#     """
+#     assert(isinstance(fname, str)), "fname must be a valid file in str format"
+#     f = open(fname, 'r')
+#     mappings = {}
+#     for line_number, line in enumerate(f):
+#         filtered = line.translate(str.maketrans('', '', string.punctuation)).lower().split()
+#         for position,word in enumerate(filtered):
+#             mappings[(line_number+1,position+1)] = word
+#     return mappings
+
+print(encrypt_message("let us not say we met late at the night about the secret", "metamorphosis.txt"))
+print(decrypt_message([(1683, 10), (1879, 4), (369, 9), (940, 10), (541, 2), (2328, 3), (952, 6), (1131, 7), (87, 2), (757, 10), (1081, 7), (409, 2), (902, 1)], "metamorphosis.txt"))
