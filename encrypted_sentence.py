@@ -1,4 +1,4 @@
-from collections import defaultdict
+import collections
 import random
 import string
 
@@ -28,6 +28,7 @@ def encrypt_message(message,fname):
             assert(word in encryption_mappings), "Word in sentence to encrypt must be a valid word found in Metamorphosis"
         except AssertionError as e:
             print(f"Encryption failed: {e}")
+            print(word)
             return None
         tuples = encryption_mappings[word]
         # Randomly choose a tuple to map the word and pop it from the list of possible mappings
@@ -77,7 +78,7 @@ def build_encryption_decryption_map(fname):
     """
     assert(isinstance(fname, str)), "fname must be a valid file in str format"
     f = open(fname, 'r')
-    encrypt_mappings = defaultdict(list)
+    encrypt_mappings = collections.defaultdict(list)
     decrypt_mappings = {}
     for line_number, line in enumerate(f):
         filtered = line.translate(str.maketrans('', '', string.punctuation)).lower().split()
@@ -90,27 +91,3 @@ def build_encryption_decryption_map(fname):
             encrypt_mappings[word].append((line_number+1,position+1))
             decrypt_mappings[(line_number+1,position+1)] = word
     return encrypt_mappings,decrypt_mappings
-    
-# def build_decyrption_map(fname):
-#     """
-#     Builds a dictionary that maps each word to a possible tuple.
-#     Each tuple represents the (line number, position in the line) of where that specific
-#     word is found. In contrast to the build_encrypt_map() dictionary
-#     that is created, this dictionary is flipped. The key is the tuple
-#     and the value is the word.
-
-#     :param fname: filename for source text
-#     :type fname: str
-#     :returns: a dictionary that maps the possible encodings for encrypting and decrypting
-#     """
-#     assert(isinstance(fname, str)), "fname must be a valid file in str format"
-#     f = open(fname, 'r')
-#     mappings = {}
-#     for line_number, line in enumerate(f):
-#         filtered = line.translate(str.maketrans('', '', string.punctuation)).lower().split()
-#         for position,word in enumerate(filtered):
-#             mappings[(line_number+1,position+1)] = word
-#     return mappings
-
-print(encrypt_message("let us not say we met late at the night about the secret", "metamorphosis.txt"))
-print(decrypt_message([(1683, 10), (1879, 4), (369, 9), (940, 10), (541, 2), (2328, 3), (952, 6), (1131, 7), (87, 2), (757, 10), (1081, 7), (409, 2), (902, 1)], "metamorphosis.txt"))
